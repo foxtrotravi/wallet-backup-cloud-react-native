@@ -22,10 +22,9 @@ export type { CloudErrorCode } from './errors.js';
 
 // Types
 export type {
-  BackupFilePayload,
+  CloudEncryptionKeyFile,
+  CloudKeyResult,
   CloudProvider,
-  DriveFile,
-  DriveFileListResponse,
   GoogleDriveConfig,
   ICloudConfig,
 } from './types.js';

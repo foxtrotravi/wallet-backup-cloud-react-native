@@ -35,7 +35,6 @@ export class CloudBackup {
    */
   async uploadEncryptedKey(key: string): Promise<void> {
     this.validateKey(key);
-    // Delegate — no logging of key material
     await this.provider.upload(key);
   }
 
@@ -70,6 +69,16 @@ export class CloudBackup {
    */
   async isAvailable(): Promise<boolean> {
     return this.provider.isAvailable();
+  }
+
+  /**
+   * Check whether a backup file exists in cloud storage.
+   * Does not download the content — lightweight existence check.
+   *
+   * @returns `true` if the backup file exists, `false` otherwise (never throws).
+   */
+  async exists(): Promise<boolean> {
+    return this.provider.exists();
   }
 
   // -------------------------------------------------------------------------

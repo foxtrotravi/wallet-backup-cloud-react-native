@@ -35,6 +35,12 @@ export interface CloudProvider {
    * Should be a lightweight probe — not a full upload/download.
    */
   isAvailable(): Promise<boolean>;
+
+  /**
+   * Returns `true` if a backup file exists in cloud storage.
+   * Does not download the content.
+   */
+  exists(): Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,17 +55,20 @@ export interface CloudProvider {
 export interface GoogleDriveConfig {
   /** A valid OAuth2 access token scoped to `drive.appdata`. */
   readonly accessToken: string;
+  /** Override the backup file path. Default: `wallet_backup_key.json` */
+  readonly filePath?: string;
+  /** The user's cloud email — stored inside the backup file for traceability. */
+  readonly cloudEmail?: string;
 }
 
 /**
  * Config for {@link ICloudProvider}.
  */
 export interface ICloudConfig {
-  /**
-   * Override the default iCloud file path.
-   * Default: `/wallet/wallet_backup_key.json`
-   */
+  /** Override the backup file path. Default: `wallet_backup_key.json` */
   readonly filePath?: string;
+  /** The user's cloud email — stored inside the backup file for traceability. */
+  readonly cloudEmail?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,27 +77,35 @@ export interface ICloudConfig {
 
 /**
  * The JSON blob written to cloud storage by every provider.
+ * Matches the proven format from the reference implementation.
  */
-export interface BackupFilePayload {
-  /** Schema version — bump when the payload shape changes */
-  readonly version: 1;
-  /** The encrypted wallet master key (already encrypted by the crypto module) */
-  readonly encryptedKey: string;
-  /** ISO-8601 UTC timestamp when the backup was created */
-  readonly createdAt: string;
+export interface CloudEncryptionKeyFile {
+  /** The encrypted wallet master key */
+  readonly encryptionKey: string;
+  /** ISO-8601 UTC timestamp when the backup was saved */
+  readonly savedAt: string;
+  /** Platform that created this backup */
+  readonly platform: 'ios' | 'android';
+  /** Schema version */
+  readonly version: string;
+  /** Cloud user email that owns this backup */
+  readonly cloudEmail: string;
 }
 
 // ---------------------------------------------------------------------------
-// Internal Drive API response shapes (not exported)
+// Result types
 // ---------------------------------------------------------------------------
 
-/** A single Google Drive file resource */
-export interface DriveFile {
-  readonly id: string;
-  readonly name: string;
-}
-
-/** Google Drive file-list response */
-export interface DriveFileListResponse {
-  readonly files: DriveFile[];
+/**
+ * Rich result from cloud key retrieval — includes metadata about the attempt.
+ */
+export interface CloudKeyResult {
+  /** The encryption key, or null if not found / cancelled */
+  key: string | null;
+  /** The Google/cloud account email used (Android), or null (iOS) */
+  cloudEmail: string | null;
+  /** True if the backup file was not found in cloud storage */
+  notFound: boolean;
+  /** True if the user cancelled the cloud sign-in */
+  userCancelled: boolean;
 }
