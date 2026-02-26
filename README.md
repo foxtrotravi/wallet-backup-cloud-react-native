@@ -1,4 +1,4 @@
-# @wallet/backup-cloud-react-native
+# @foxtrotravi/backup-cloud-react-native
 
 Production-grade cloud backup SDK for Expo / React Native wallet apps.  
 Stores an encrypted master key in **Google Drive** (appDataFolder) or **iCloud** via a clean provider abstraction.
@@ -8,7 +8,7 @@ Stores an encrypted master key in **Google Drive** (appDataFolder) or **iCloud**
 ## Installation
 
 ```bash
-npm install @wallet/backup-cloud-react-native
+npm install @foxtrotravi/backup-cloud-react-native
 # iCloud support also requires:
 npm install react-native-cloud-storage
 ```
@@ -40,7 +40,7 @@ import {
   CloudUnavailableError,
   CloudStorageError,
   CloudValidationError,
-} from '@wallet/backup-cloud-react-native';
+} from '@foxtrotravi/backup-cloud-react-native';
 
 // Token must be obtained by the caller (e.g., via expo-auth-session)
 const provider = new GoogleDriveProvider({ accessToken: '<your_token>' });
@@ -65,7 +65,7 @@ const available = await cloud.isAvailable(); // boolean
 import {
   CloudBackup,
   ICloudProvider,
-} from '@wallet/backup-cloud-react-native';
+} from '@foxtrotravi/backup-cloud-react-native';
 
 const provider = new ICloudProvider(); // default path: /wallet/wallet_backup_key.json
 const cloud = new CloudBackup(provider);
@@ -83,7 +83,7 @@ import {
   CloudAuthError,
   CloudUnavailableError,
   CloudStorageError,
-} from '@wallet/backup-cloud-react-native';
+} from '@foxtrotravi/backup-cloud-react-native';
 
 try {
   await cloud.uploadEncryptedKey(encryptedKey);
@@ -162,7 +162,7 @@ interface ICloudConfig {
 ## Implementing a Custom Provider
 
 ```ts
-import type { CloudProvider } from '@wallet/backup-cloud-react-native';
+import type { CloudProvider } from '@foxtrotravi/backup-cloud-react-native';
 
 class MyCustomProvider implements CloudProvider {
   async upload(key: string): Promise<void> { /* ... */ }
@@ -210,6 +210,33 @@ npm run typecheck # tsc --noEmit
 
 ---
 
+## Publishing
+
+**First publish:**
+```bash
+npm login
+npm run build
+npm publish --access public
+```
+
+**Publishing updates:**
+
+```bash
+# 1. Make your code changes
+# 2. Bump version (choose one based on semver):
+npm version patch   # 1.0.0 → 1.0.1 (bug fixes)
+npm version minor   # 1.0.0 → 1.1.0 (new features, backward compatible)
+npm version major   # 1.0.0 → 2.0.0 (breaking changes)
+
+# 3. Build and publish
+npm run build
+npm publish --access public
+```
+
+Consumers using `^1.0.0` will receive patch/minor updates automatically on `npm install`.
+
+---
+
 ## Architecture
 
 ```
@@ -235,14 +262,14 @@ examples/
 
 ---
 
-## Integration with `@wallet/backup-backend`
+## Integration with `@foxtrotravi/backup-backend`
 
 ```ts
-import { BackendBackupClient } from '@wallet/backup-backend';
+import { BackendBackupClient } from '@foxtrotravi/backup-backend';
 import {
   CloudBackup,
   GoogleDriveProvider,
-} from '@wallet/backup-cloud-react-native';
+} from '@foxtrotravi/backup-cloud-react-native';
 
 const backend = new BackendBackupClient({ baseUrl: 'https://api.mywallet.com' });
 const cloud = new CloudBackup(new GoogleDriveProvider({ accessToken }));
