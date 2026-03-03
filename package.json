@@ -1,6 +1,6 @@
 {
   "name": "@foxtrotravi/backup-cloud-react-native",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Production-grade cloud backup SDK for Expo/React Native wallet apps — Google Drive & iCloud providers",
   "license": "MIT",
   "author": "Wallet Team",
