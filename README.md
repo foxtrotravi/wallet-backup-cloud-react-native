@@ -57,6 +57,9 @@ await cloud.deleteBackup();
 
 // Availability check
 const available = await cloud.isAvailable(); // boolean
+
+// Existence check (without downloading)
+const hasBackup = await cloud.exists(); // boolean
 ```
 
 ### iCloud
@@ -67,7 +70,7 @@ import {
   ICloudProvider,
 } from '@foxtrotravi/backup-cloud-react-native';
 
-const provider = new ICloudProvider(); // default path: /wallet/wallet_backup_key.json
+const provider = new ICloudProvider(); // default path: wallet_backup_key.json
 const cloud = new CloudBackup(provider);
 
 await cloud.uploadEncryptedKey(encryptedKey);
@@ -125,6 +128,7 @@ new CloudBackup(provider: CloudProvider)
 | `downloadEncryptedKey` | `() => Promise<string \| null>` | Download or `null` if no backup exists. |
 | `deleteBackup` | `() => Promise<void>` | Delete backup (idempotent). |
 | `isAvailable` | `() => Promise<boolean>` | Lightweight probe — never throws. |
+| `exists` | `() => Promise<boolean>` | Check if backup file exists without downloading — never throws. |
 
 ---
 
@@ -134,13 +138,15 @@ new CloudBackup(provider: CloudProvider)
 new GoogleDriveProvider(config: GoogleDriveConfig)
 
 interface GoogleDriveConfig {
-  accessToken: string; // OAuth2 token — drive.appdata scope required
+  accessToken: string;    // OAuth2 token — drive.appdata scope required
+  filePath?: string;      // default: "wallet_backup_key.json"
+  cloudEmail?: string;    // stored inside the backup file for traceability
 }
 ```
 
-- File stored in `appDataFolder` as `wallet_backup_key.json`
-- Upserts on upload (create if absent, PATCH if present)
-- Uses `fetch` (no extra HTTP library)
+- File stored in `appDataFolder` as `wallet_backup_key.json` (configurable via `filePath`)
+- Uses `react-native-cloud-storage` with `CloudStorageScope.AppData`
+- Verifies file existence after every write
 
 ---
 
@@ -150,11 +156,15 @@ interface GoogleDriveConfig {
 new ICloudProvider(config?: ICloudConfig)
 
 interface ICloudConfig {
-  filePath?: string; // default: /wallet/wallet_backup_key.json
+  filePath?: string;      // default: "wallet_backup_key.json"
+  cloudEmail?: string;    // stored inside the backup file for traceability
 }
 ```
 
 - Requires `react-native-cloud-storage` peer dependency
+- Uses `CloudStorageScope.AppData` (app-specific hidden folder)
+- Checks iCloud availability before every operation
+- Verifies file existence after every write
 - Handles: iCloud not available, user not signed in, quota errors
 
 ---
@@ -169,6 +179,7 @@ class MyCustomProvider implements CloudProvider {
   async download(): Promise<string | null> { /* ... */ }
   async delete(): Promise<void> { /* ... */ }
   async isAvailable(): Promise<boolean> { /* ... */ }
+  async exists(): Promise<boolean> { /* ... */ }
 }
 
 const cloud = new CloudBackup(new MyCustomProvider());
@@ -178,15 +189,25 @@ const cloud = new CloudBackup(new MyCustomProvider());
 
 ## Stored File Format
 
-Both providers write the same JSON payload:
+Both providers write the same JSON payload (`CloudEncryptionKeyFile`):
 
 ```json
 {
-  "version": 1,
-  "encryptedKey": "<encrypted_wallet_master_key>",
-  "createdAt": "2026-02-25T00:00:00.000Z"
+  "encryptionKey": "<encrypted_wallet_master_key>",
+  "savedAt": "2026-02-25T00:00:00.000Z",
+  "platform": "ios",
+  "version": "1.0",
+  "cloudEmail": "user@example.com"
 }
 ```
+
+| Field | Type | Description |
+|---|---|---|
+| `encryptionKey` | `string` | The encrypted wallet master key |
+| `savedAt` | `string` | ISO-8601 UTC timestamp when the backup was saved |
+| `platform` | `"ios" \| "android"` | Platform that created this backup |
+| `version` | `string` | Schema version (currently `"1.0"`) |
+| `cloudEmail` | `string` | Cloud user email that owns this backup |
 
 ---
 
@@ -266,6 +287,7 @@ examples/
 
 ```ts
 import { BackendBackupClient } from '@foxtrotravi/backup-backend';
+import type { SeedItem, EntropyItem } from '@foxtrotravi/backup-backend';
 import {
   CloudBackup,
   GoogleDriveProvider,
@@ -274,10 +296,15 @@ import {
 const backend = new BackendBackupClient({ baseUrl: 'https://api.mywallet.com' });
 const cloud = new CloudBackup(new GoogleDriveProvider({ accessToken }));
 
-// Parallel independent uploads
-await backend.uploadSeed({ encryptedSeed, authToken, deviceId });
-await backend.uploadEntropy({ encryptedEntropy, authToken, deviceId });
+// Upload (seed, entropy, and cloud key)
+await backend.uploadSeed({ seed: encryptedSeed, authToken, metadata: { device: 'ios' } });
+await backend.uploadEntropy({ entropy: encryptedEntropy, authToken });
 await cloud.uploadEncryptedKey(encryptedMasterKey);
+
+// Retrieve — backend returns full arrays of SeedItem[] / EntropyItem[]
+const seeds: SeedItem[] = await backend.getSeed(authToken);       // [] if no backup
+const entropies: EntropyItem[] = await backend.getEntropy(authToken); // [] if no backup
+const cloudKey = await cloud.downloadEncryptedKey();              // string | null
 ```
 
 ---
