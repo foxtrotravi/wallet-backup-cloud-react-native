@@ -1,15 +1,15 @@
 /**
- * @wallet/backup-cloud-react-native
+ * @foxtrotravi/backup-cloud-react-native
  * Public barrel export — named exports only, no default exports.
  * Tree-shakeable: each import can be individually eliminated by bundlers.
  */
 
 // Core
-export { CloudBackup } from './cloudBackup.js';
+export { CloudBackup } from "./cloudBackup.js";
 
 // Providers
-export { GoogleDriveProvider } from './providers/googleDriveProvider.js';
-export { ICloudProvider } from './providers/iCloudProvider.js';
+export { GoogleDriveProvider } from "./providers/googleDriveProvider.js";
+export { ICloudProvider } from "./providers/iCloudProvider.js";
 
 // Errors (includes CloudErrorCode type)
 export {
@@ -17,8 +17,8 @@ export {
   CloudStorageError,
   CloudUnavailableError,
   CloudValidationError,
-} from './errors.js';
-export type { CloudErrorCode } from './errors.js';
+} from "./errors.js";
+export type { CloudErrorCode } from "./errors.js";
 
 // Types
 export type {
@@ -27,4 +27,4 @@ export type {
   CloudProvider,
   GoogleDriveConfig,
   ICloudConfig,
-} from './types.js';
+} from "./types.js";

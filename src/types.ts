@@ -1,5 +1,5 @@
 /**
- * @wallet/backup-cloud-react-native
+ * @foxtrotravi/backup-cloud-react-native
  * Core type definitions — no runtime code.
  */
 
@@ -85,7 +85,7 @@ export interface CloudEncryptionKeyFile {
   /** ISO-8601 UTC timestamp when the backup was saved */
   readonly savedAt: string;
   /** Platform that created this backup */
-  readonly platform: 'ios' | 'android';
+  readonly platform: "ios" | "android";
   /** Schema version */
   readonly version: string;
   /** Cloud user email that owns this backup */

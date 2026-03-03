@@ -1,5 +1,5 @@
 /**
- * @wallet/backup-cloud-react-native
+ * @foxtrotravi/backup-cloud-react-native
  * CloudBackup — public facade that wraps any CloudProvider.
  *
  * Responsibilities:
@@ -10,8 +10,8 @@
  *    our typed error classes)
  */
 
-import { CloudValidationError } from './errors.js';
-import type { CloudProvider } from './types.js';
+import { CloudValidationError } from "./errors.js";
+import type { CloudProvider } from "./types.js";
 
 export class CloudBackup {
   private readonly provider: CloudProvider;
@@ -88,7 +88,7 @@ export class CloudBackup {
   private validateKey(key: string): void {
     if (key.trim().length === 0) {
       throw new CloudValidationError(
-        'Encrypted key must be a non-empty string',
+        "Encrypted key must be a non-empty string",
       );
     }
   }

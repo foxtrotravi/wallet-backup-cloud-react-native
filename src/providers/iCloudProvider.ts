@@ -1,5 +1,5 @@
 /**
- * @wallet/backup-cloud-react-native
+ * @foxtrotravi/backup-cloud-react-native
  * ICloudProvider — stores the encrypted master key in the device's iCloud
  * via `react-native-cloud-storage` using `CloudStorageScope.AppData`.
  *

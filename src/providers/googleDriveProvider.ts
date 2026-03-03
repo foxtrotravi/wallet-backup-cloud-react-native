@@ -1,5 +1,5 @@
 /**
- * @wallet/backup-cloud-react-native
+ * @foxtrotravi/backup-cloud-react-native
  * GoogleDriveProvider — stores the encrypted master key in the caller's
  * Google Drive `appDataFolder` via `react-native-cloud-storage`.
  *
@@ -12,23 +12,23 @@
  *  - Never logs the access token or encrypted key material.
  */
 
-import { CloudStorage, CloudStorageScope } from 'react-native-cloud-storage';
+import { CloudStorage, CloudStorageScope } from "react-native-cloud-storage";
 import {
   CloudAuthError,
   CloudStorageError,
   CloudUnavailableError,
-} from '../errors.js';
+} from "../errors.js";
 import type {
   CloudEncryptionKeyFile,
   CloudProvider,
   GoogleDriveConfig,
-} from '../types.js';
+} from "../types.js";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEFAULT_FILE_PATH = 'wallet_backup_key.json';
+const DEFAULT_FILE_PATH = "wallet_backup_key.json";
 
 // ---------------------------------------------------------------------------
 // Implementation
@@ -40,7 +40,7 @@ export class GoogleDriveProvider implements CloudProvider {
 
   constructor(config: GoogleDriveConfig) {
     this.filePath = config.filePath ?? DEFAULT_FILE_PATH;
-    this.cloudEmail = config.cloudEmail ?? '';
+    this.cloudEmail = config.cloudEmail ?? "";
 
     CloudStorage.setProviderOptions({
       accessToken: config.accessToken,
@@ -55,8 +55,8 @@ export class GoogleDriveProvider implements CloudProvider {
     const payload: CloudEncryptionKeyFile = {
       encryptionKey: encryptedKey,
       savedAt: new Date().toISOString(),
-      platform: 'android',
-      version: '1.0',
+      platform: "android",
+      version: "1.0",
       cloudEmail: this.cloudEmail,
     };
 
@@ -67,7 +67,7 @@ export class GoogleDriveProvider implements CloudProvider {
         CloudStorageScope.AppData,
       );
     } catch (cause) {
-      throw this.mapError(cause, 'Failed to write backup to Google Drive');
+      throw this.mapError(cause, "Failed to write backup to Google Drive");
     }
 
     try {
@@ -77,12 +77,12 @@ export class GoogleDriveProvider implements CloudProvider {
       );
       if (!verified) {
         throw new CloudStorageError(
-          'Google Drive backup failed: file not found after write',
+          "Google Drive backup failed: file not found after write",
         );
       }
     } catch (cause) {
       if (cause instanceof CloudStorageError) throw cause;
-      throw this.mapError(cause, 'Failed to verify Google Drive backup');
+      throw this.mapError(cause, "Failed to verify Google Drive backup");
     }
   }
 
@@ -95,7 +95,7 @@ export class GoogleDriveProvider implements CloudProvider {
       );
     } catch (cause) {
       if (this.isFileNotFoundError(cause)) return null;
-      throw this.mapError(cause, 'Failed to check Google Drive file existence');
+      throw this.mapError(cause, "Failed to check Google Drive file existence");
     }
 
     if (!fileExists) return null;
@@ -107,7 +107,7 @@ export class GoogleDriveProvider implements CloudProvider {
         CloudStorageScope.AppData,
       );
     } catch (cause) {
-      throw this.mapError(cause, 'Failed to read backup from Google Drive');
+      throw this.mapError(cause, "Failed to read backup from Google Drive");
     }
 
     const payload = this.parsePayload(raw);
@@ -123,7 +123,7 @@ export class GoogleDriveProvider implements CloudProvider {
       );
     } catch (cause) {
       if (this.isFileNotFoundError(cause)) return;
-      throw this.mapError(cause, 'Failed to check Google Drive file existence');
+      throw this.mapError(cause, "Failed to check Google Drive file existence");
     }
 
     if (!fileExists) return;
@@ -131,7 +131,7 @@ export class GoogleDriveProvider implements CloudProvider {
     try {
       await CloudStorage.unlink(this.filePath, CloudStorageScope.AppData);
     } catch (cause) {
-      throw this.mapError(cause, 'Failed to delete backup from Google Drive');
+      throw this.mapError(cause, "Failed to delete backup from Google Drive");
     }
   }
 
@@ -164,9 +164,8 @@ export class GoogleDriveProvider implements CloudProvider {
    * in Google Drive's appDataFolder. This is normal for new users.
    */
   private isFileNotFoundError(cause: unknown): boolean {
-    const msg =
-      cause instanceof Error ? cause.message : String(cause);
-    return msg.includes('Could not get file id');
+    const msg = cause instanceof Error ? cause.message : String(cause);
+    return msg.includes("Could not get file id");
   }
 
   /**
@@ -177,10 +176,10 @@ export class GoogleDriveProvider implements CloudProvider {
       cause instanceof Error ? cause.message.toLowerCase() : String(cause);
 
     if (
-      msg.includes('unauthorized') ||
-      msg.includes('401') ||
-      msg.includes('403') ||
-      msg.includes('auth')
+      msg.includes("unauthorized") ||
+      msg.includes("401") ||
+      msg.includes("403") ||
+      msg.includes("auth")
     ) {
       return new CloudAuthError(
         `Google Drive authentication failed — ${context}`,
@@ -189,9 +188,9 @@ export class GoogleDriveProvider implements CloudProvider {
     }
 
     if (
-      msg.includes('unavailable') ||
-      msg.includes('network') ||
-      msg.includes('not available')
+      msg.includes("unavailable") ||
+      msg.includes("network") ||
+      msg.includes("not available")
     ) {
       return new CloudUnavailableError(
         `Google Drive unavailable — ${context}`,
@@ -209,18 +208,18 @@ export class GoogleDriveProvider implements CloudProvider {
       parsed = JSON.parse(raw) as unknown;
     } catch (cause) {
       throw new CloudStorageError(
-        'Google Drive backup file contains invalid JSON',
+        "Google Drive backup file contains invalid JSON",
         cause,
       );
     }
 
     if (
       parsed === null ||
-      typeof parsed !== 'object' ||
-      typeof (parsed as Record<string, unknown>)['encryptionKey'] !== 'string'
+      typeof parsed !== "object" ||
+      typeof (parsed as Record<string, unknown>)["encryptionKey"] !== "string"
     ) {
       throw new CloudStorageError(
-        'Google Drive backup payload has an unexpected shape',
+        "Google Drive backup payload has an unexpected shape",
       );
     }
 
