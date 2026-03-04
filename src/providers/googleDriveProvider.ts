@@ -51,12 +51,17 @@ export class GoogleDriveProvider implements CloudProvider {
   // Public API
   // -------------------------------------------------------------------------
 
-  async upload(encryptedKey: string): Promise<void> {
+  async upload(
+    encryptedKey: string,
+    metadata: Record<string, unknown>,
+  ): Promise<CloudEncryptionKeyFile | null> {
     const payload: CloudEncryptionKeyFile = {
       encryptionKey: encryptedKey,
-      savedAt: new Date().toISOString(),
+      savedAt: metadata.savedAt
+        ? metadata.savedAt.toString()
+        : new Date().toISOString(),
       platform: "android",
-      version: "1.0",
+      version: metadata.version ? (metadata.version as number) : 1,
       cloudEmail: this.cloudEmail,
     };
 
@@ -80,13 +85,14 @@ export class GoogleDriveProvider implements CloudProvider {
           "Google Drive backup failed: file not found after write",
         );
       }
+      return payload;
     } catch (cause) {
       if (cause instanceof CloudStorageError) throw cause;
       throw this.mapError(cause, "Failed to verify Google Drive backup");
     }
   }
 
-  async download(): Promise<string | null> {
+  async download(): Promise<CloudEncryptionKeyFile | null> {
     let fileExists: boolean;
     try {
       fileExists = await CloudStorage.exists(
@@ -111,7 +117,7 @@ export class GoogleDriveProvider implements CloudProvider {
     }
 
     const payload = this.parsePayload(raw);
-    return payload.encryptionKey;
+    return payload;
   }
 
   async delete(): Promise<void> {
