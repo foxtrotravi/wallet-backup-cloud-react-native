@@ -11,7 +11,7 @@
  */
 
 import { CloudValidationError } from "./errors.js";
-import type { CloudProvider } from "./types.js";
+import type { CloudEncryptionKeyFile, CloudProvider } from "./types.js";
 
 export class CloudBackup {
   private readonly provider: CloudProvider;
@@ -33,20 +33,23 @@ export class CloudBackup {
    * @throws {CloudAuthError} if credentials are invalid.
    * @throws {CloudStorageError} if the write fails.
    */
-  async uploadEncryptedKey(key: string): Promise<void> {
+  async uploadEncryptedKey(
+    key: string,
+    metadata: Record<string, unknown>,
+  ): Promise<CloudEncryptionKeyFile | null> {
     this.validateKey(key);
-    await this.provider.upload(key);
+    return await this.provider.upload(key, metadata);
   }
 
   /**
    * Download the encrypted master key from cloud storage.
    *
-   * @returns The encrypted key string, or `null` if no backup exists yet.
+   * @returns The encrypted key file, or `null` if no backup exists yet.
    * @throws {CloudUnavailableError} if the cloud service is unreachable.
    * @throws {CloudAuthError} if credentials are invalid.
    * @throws {CloudStorageError} if the read fails.
    */
-  async downloadEncryptedKey(): Promise<string | null> {
+  async downloadEncryptedKey(): Promise<CloudEncryptionKeyFile | null> {
     return this.provider.download();
   }
 

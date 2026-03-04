@@ -46,14 +46,19 @@ export class ICloudProvider implements CloudProvider {
   // Public API
   // -------------------------------------------------------------------------
 
-  async upload(encryptedKey: string): Promise<void> {
+  async upload(
+    encryptedKey: string,
+    metadata: Record<string, unknown>,
+  ): Promise<CloudEncryptionKeyFile | null> {
     await this.assertAvailable();
 
     const payload: CloudEncryptionKeyFile = {
       encryptionKey: encryptedKey,
-      savedAt: new Date().toISOString(),
+      savedAt: metadata.savedAt
+        ? metadata.savedAt.toString()
+        : new Date().toISOString(),
       platform: "ios",
-      version: "1.0",
+      version: metadata.version ? (metadata.version as number) : 1,
       cloudEmail: this.cloudEmail,
     };
 
@@ -77,13 +82,14 @@ export class ICloudProvider implements CloudProvider {
           "iCloud backup failed: file not found after write",
         );
       }
+      return payload;
     } catch (cause) {
       if (cause instanceof CloudStorageError) throw cause;
       throw this.mapError(cause, "Failed to verify iCloud backup");
     }
   }
 
-  async download(): Promise<string | null> {
+  async download(): Promise<CloudEncryptionKeyFile | null> {
     await this.assertAvailable();
 
     let fileExists: boolean;
@@ -109,7 +115,7 @@ export class ICloudProvider implements CloudProvider {
     }
 
     const payload = this.parsePayload(raw);
-    return payload.encryptionKey;
+    return payload;
   }
 
   async delete(): Promise<void> {

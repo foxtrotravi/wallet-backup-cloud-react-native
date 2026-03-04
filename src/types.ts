@@ -16,13 +16,13 @@ export interface CloudProvider {
    * Store `encryptedKey` in the provider's cloud storage.
    * If a backup already exists, it MUST be overwritten.
    */
-  upload(encryptedKey: string): Promise<void>;
+  upload(encryptedKey: string, metadata: Record<string, unknown>): Promise<CloudEncryptionKeyFile | null>;
 
   /**
-   * Retrieve the stored encrypted key.
+   * Retrieve the stored encrypted key and metadata.
    * Returns `null` if no backup exists yet.
    */
-  download(): Promise<string | null>;
+  download(): Promise<CloudEncryptionKeyFile | null>;
 
   /**
    * Permanently remove the stored backup.
@@ -87,7 +87,7 @@ export interface CloudEncryptionKeyFile {
   /** Platform that created this backup */
   readonly platform: "ios" | "android";
   /** Schema version */
-  readonly version: string;
+  readonly version: number;
   /** Cloud user email that owns this backup */
   readonly cloudEmail: string;
 }
