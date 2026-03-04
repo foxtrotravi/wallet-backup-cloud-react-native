@@ -46,11 +46,14 @@ import {
 const provider = new GoogleDriveProvider({ accessToken: '<your_token>' });
 const cloud = new CloudBackup(provider);
 
-// Upload
-await cloud.uploadEncryptedKey(encryptedKey);
+// Upload (metadata must include version; savedAt is auto-filled if omitted)
+const result = await cloud.uploadEncryptedKey(encryptedKey, { version: 1 });
 
-// Download
-const key = await cloud.downloadEncryptedKey(); // string | null
+// Download — returns the full CloudEncryptionKeyFile or null
+const backup = await cloud.downloadEncryptedKey(); // CloudEncryptionKeyFile | null
+if (backup) {
+  console.log(backup.encryptionKey, backup.version);
+}
 
 // Delete
 await cloud.deleteBackup();
@@ -73,7 +76,7 @@ import {
 const provider = new ICloudProvider(); // default path: wallet_backup_key.json
 const cloud = new CloudBackup(provider);
 
-await cloud.uploadEncryptedKey(encryptedKey);
+await cloud.uploadEncryptedKey(encryptedKey, { version: 1 });
 ```
 
 ---
@@ -89,7 +92,7 @@ import {
 } from '@foxtrotravi/backup-cloud-react-native';
 
 try {
-  await cloud.uploadEncryptedKey(encryptedKey);
+  await cloud.uploadEncryptedKey(encryptedKey, { version: 1 });
 } catch (err) {
   if (err instanceof CloudValidationError) {
     // Empty or invalid key passed by caller
@@ -124,8 +127,8 @@ new CloudBackup(provider: CloudProvider)
 
 | Method | Signature | Description |
 |---|---|---|
-| `uploadEncryptedKey` | `(key: string) => Promise<void>` | Validate + upload. Throws `CloudValidationError` on empty key. |
-| `downloadEncryptedKey` | `() => Promise<string \| null>` | Download or `null` if no backup exists. |
+| `uploadEncryptedKey` | `(key, metadata) => Promise<CloudEncryptionKeyFile \| null>` | Validate + upload. Returns the written payload. Throws `CloudValidationError` on empty key. |
+| `downloadEncryptedKey` | `() => Promise<CloudEncryptionKeyFile \| null>` | Download full backup payload or `null` if no backup exists. |
 | `deleteBackup` | `() => Promise<void>` | Delete backup (idempotent). |
 | `isAvailable` | `() => Promise<boolean>` | Lightweight probe — never throws. |
 | `exists` | `() => Promise<boolean>` | Check if backup file exists without downloading — never throws. |
@@ -172,11 +175,11 @@ interface ICloudConfig {
 ## Implementing a Custom Provider
 
 ```ts
-import type { CloudProvider } from '@foxtrotravi/backup-cloud-react-native';
+import type { CloudProvider, CloudEncryptionKeyFile } from '@foxtrotravi/backup-cloud-react-native';
 
 class MyCustomProvider implements CloudProvider {
-  async upload(key: string): Promise<void> { /* ... */ }
-  async download(): Promise<string | null> { /* ... */ }
+  async upload(key: string, metadata: Record<string, unknown>): Promise<CloudEncryptionKeyFile | null> { /* ... */ }
+  async download(): Promise<CloudEncryptionKeyFile | null> { /* ... */ }
   async delete(): Promise<void> { /* ... */ }
   async isAvailable(): Promise<boolean> { /* ... */ }
   async exists(): Promise<boolean> { /* ... */ }
@@ -196,7 +199,7 @@ Both providers write the same JSON payload (`CloudEncryptionKeyFile`):
   "encryptionKey": "<encrypted_wallet_master_key>",
   "savedAt": "2026-02-25T00:00:00.000Z",
   "platform": "ios",
-  "version": "1.0",
+  "version": 1,
   "cloudEmail": "user@example.com"
 }
 ```
@@ -206,7 +209,7 @@ Both providers write the same JSON payload (`CloudEncryptionKeyFile`):
 | `encryptionKey` | `string` | The encrypted wallet master key |
 | `savedAt` | `string` | ISO-8601 UTC timestamp when the backup was saved |
 | `platform` | `"ios" \| "android"` | Platform that created this backup |
-| `version` | `string` | Schema version (currently `"1.0"`) |
+| `version` | `number` | Backup version number |
 | `cloudEmail` | `string` | Cloud user email that owns this backup |
 
 ---
@@ -267,7 +270,7 @@ src/
   │                           #   CloudStorageError, CloudValidationError
   cloudBackup.ts              # Public CloudBackup wrapper
   providers/
-    googleDriveProvider.ts    # Drive REST v3 (fetch)
+    googleDriveProvider.ts    # react-native-cloud-storage (AppData scope)
     iCloudProvider.ts         # react-native-cloud-storage
   index.ts                    # Public barrel (named exports only)
   __tests__/
@@ -299,12 +302,12 @@ const cloud = new CloudBackup(new GoogleDriveProvider({ accessToken }));
 // Upload (seed, entropy, and cloud key)
 await backend.uploadSeed({ seed: encryptedSeed, authToken, metadata: { device: 'ios' } });
 await backend.uploadEntropy({ entropy: encryptedEntropy, authToken });
-await cloud.uploadEncryptedKey(encryptedMasterKey);
+await cloud.uploadEncryptedKey(encryptedMasterKey, { version: 1 });
 
 // Retrieve — backend returns full arrays of SeedItem[] / EntropyItem[]
-const seeds: SeedItem[] = await backend.getSeed(authToken);       // [] if no backup
+const seeds: SeedItem[] = await backend.getSeed(authToken);         // [] if no backup
 const entropies: EntropyItem[] = await backend.getEntropy(authToken); // [] if no backup
-const cloudKey = await cloud.downloadEncryptedKey();              // string | null
+const backup = await cloud.downloadEncryptedKey();                  // CloudEncryptionKeyFile | null
 ```
 
 ---
