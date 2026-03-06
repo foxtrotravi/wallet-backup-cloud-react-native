@@ -13,7 +13,7 @@
     "icloud",
     "google-drive",
     "encrypted",
-    "sdk"
+    "wdk"
   ],
   "main": "dist/index.js",
   "module": "dist/index.mjs",
